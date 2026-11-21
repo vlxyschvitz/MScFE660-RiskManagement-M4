@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("sr_theme")||"dark"}catch(e){document.documentElement.dataset.theme="dark"}</script>
+<title>Estimating Tail Loss with Extreme Value Theory: Interactive Study Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d1829;--panel:#13223a;--ink:#e8ebf2;--muted:#9aa6bd;--line:#25354f;--accent:#7f9fd0;--brass:#c9a86a;--alert:#e0707f;--warn:#e0b25c;--ok:#5cc4a8;--soft:#1a2c48;--shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px -12px rgba(0,0,0,.5);--node:#3b5f96;--nodeX:#b5394a;color-scheme:dark}
+:root[data-theme=light]{--bg:#f4f5f7;--panel:#fff;--ink:#14213a;--muted:#667189;--line:#dde1e8;--accent:#1e3a5f;--brass:#a8844a;--alert:#9e2b3a;--warn:#b98a2e;--ok:#2b7a67;--soft:#eceff4;--shadow:0 1px 2px rgba(20,33,58,.04),0 12px 32px -12px rgba(20,33,58,.14);--node:#1e3a5f;--nodeX:#9e2b3a;color-scheme:light}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.7 "Hanken Grotesk",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:"Cormorant Garamond",Georgia,serif;line-height:1.15;margin:0 0 .5em;font-weight:600;letter-spacing:-.01em}
+h2{font-size:clamp(2.2rem,4vw,3.2rem);font-weight:500;padding-bottom:.35em;margin-bottom:.45em;border-bottom:1px solid var(--line);position:relative}
+h2::after{content:"";position:absolute;left:0;bottom:-1px;width:72px;height:2px;background:var(--brass)}
+h3{font-size:1.55rem;margin-top:2em}
+.shell{display:grid;grid-template-columns:300px 1fr;min-height:100vh}
+nav{position:sticky;top:0;height:100vh;padding:44px 26px;background:linear-gradient(180deg,#0b1830,#0f2142);color:#e8ebf2;overflow:auto}
+nav h1{font-size:2.1rem;font-weight:500;color:#fff;margin:0;padding-bottom:16px;border-bottom:1px solid rgba(201,168,106,.5)}
+nav p{color:#a9b5cc;font-size:.82rem;margin:14px 0 36px;letter-spacing:.04em}
+nav button{display:block;width:100%;text-align:left;background:none;border:0;border-left:1px solid rgba(255,255,255,.14);padding:14px 16px;margin:0;color:#a9b5cc;font:inherit;font-size:.95rem;line-height:1.35;cursor:pointer;transition:color .2s,background .2s,border-color .2s}
+nav button:hover{color:#fff;background:rgba(255,255,255,.04)}
+nav button[aria-current=true]{color:#fff;border-left:2px solid #c9a86a;background:rgba(201,168,106,.08);font-weight:600}
+nav .done::after{content:" ✓";color:#7fd6bd}
+main{padding:56px clamp(20px,6vw,88px) 96px;max-width:1040px}
+section{display:none}
+section.on{display:block;animation:rise .5s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.lead{font-family:"Cormorant Garamond",Georgia,serif;font-size:1.5rem;line-height:1.5;color:var(--muted);max-width:50ch;margin:0 0 1.5em}
+p,li{max-width:68ch}
+li{margin-bottom:.5em}
+b{font-weight:600}
+.lab{background:var(--panel);border:1px solid var(--line);border-top:2px solid var(--brass);border-radius:3px;padding:32px 34px;margin:32px 0;box-shadow:var(--shadow)}
+.lab h3{margin-top:0;font-size:1.7rem}
+.row{display:grid;grid-template-columns:210px 1fr 64px;gap:16px;align-items:center;margin:14px 0;font-size:.93rem}
+.row output{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--accent)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:20px;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--line)}
+input[type=range]::-moz-range-track{height:2px;background:var(--line)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;margin-top:-7px;border-radius:50%;background:var(--panel);border:2px solid var(--brass);box-shadow:0 2px 6px rgba(20,33,58,.25);transition:transform .15s}
+input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--panel);border:2px solid var(--brass)}
+input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.2)}
+.meter{height:5px;background:var(--soft);border-radius:3px;overflow:hidden;margin:6px 0 12px}
+.meter i{display:block;height:100%;border-radius:3px;transition:width .35s cubic-bezier(.2,.7,.2,1),background .3s}
+.big{font-family:"Cormorant Garamond",serif;font-size:5rem;font-weight:500;line-height:1;margin-top:10px;font-variant-numeric:lining-nums}
+.cols{display:grid;grid-template-columns:1.1fr 1fr;gap:34px;align-items:center}
+.stat{display:flex;gap:0;flex-wrap:wrap;margin-top:18px;border-top:1px solid var(--line)}
+.stat div{flex:1;min-width:120px;padding:14px 18px 4px 0;margin-right:18px}
+.stat small{display:block;color:var(--muted);font-size:.8rem;line-height:1.3;margin-bottom:2px}
+.stat b{font-family:"Cormorant Garamond",serif;font-size:2.1rem;font-weight:600;font-variant-numeric:lining-nums tabular-nums}
+.note{color:var(--muted);font-size:.9rem}
+table{border-collapse:collapse;width:100%;font-size:.93rem;margin:18px 0;background:var(--panel);box-shadow:var(--shadow);border-radius:3px}
+th{font-weight:600;color:var(--accent);border-bottom:2px solid var(--brass)}
+th,td{padding:13px 16px;text-align:left;vertical-align:top}
+td{border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600;white-space:nowrap}
+.btn{background:transparent;color:var(--accent);border:1px solid var(--brass);border-radius:2px;padding:9px 22px;font:inherit;font-size:.9rem;cursor:pointer;transition:background .2s,color .2s}
+.btn:hover{background:var(--brass);color:#fff}
+.quiz{margin-top:64px;padding:32px 34px;background:linear-gradient(180deg,var(--soft),transparent);border-left:2px solid var(--brass);border-radius:0 3px 3px 0}
+.quiz h3{margin-top:0}
+.q{margin:26px 0}.q p{font-weight:600;margin:0 0 10px}
+.q label{display:block;padding:11px 16px;border:1px solid var(--line);border-radius:2px;margin:7px 0;cursor:pointer;background:var(--panel);transition:border-color .2s,transform .2s}
+.q label:hover{border-color:var(--brass);transform:translateX(3px)}
+.q input{accent-color:var(--brass);margin-right:8px}
+.q .fb{font-size:.9rem;margin-top:8px;min-height:1.2em}
+.q .good{color:var(--ok)}.q .bad{color:var(--alert)}
+svg text{fill:var(--ink);font:600 12px "Hanken Grotesk",sans-serif}
+button:focus-visible,input:focus-visible,g:focus-visible,label:focus-within{outline:2px solid var(--brass);outline-offset:3px}
+@media(prefers-reduced-motion:reduce){section.on{animation:none}*{transition:none!important}}
+@media(max-width:860px){
+.shell{display:block}
+nav{position:static;height:auto;display:flex;gap:4px;overflow-x:auto;padding:14px}
+nav h1,nav p{display:none}
+nav button{white-space:nowrap;width:auto;border-left:0;border-bottom:2px solid transparent;padding:10px 14px}
+nav button[aria-current=true]{border-left:0;border-bottom-color:#c9a86a}
+main{padding-top:36px}
+.row{grid-template-columns:1fr 56px}.row label{grid-column:1/-1}
+.cols{grid-template-columns:1fr}.lab,.quiz{padding:24px 20px}.big{font-size:4rem}
+table{display:block;overflow-x:auto}
+}
+.mods{margin-top:40px;padding-top:20px;border-top:1px solid rgba(255,255,255,.14)}
+.mods a{display:block;color:#a9b5cc;text-decoration:none;font-size:.88rem;padding:6px 0}
+.mods a:hover,.mods a[aria-current]{color:#c9a86a}
+sub{font-size:.7em}
+@media(max-width:860px){.mods{display:flex;margin:0 0 0 10px;padding:0;border:0;gap:12px;white-space:nowrap}.mods a{padding:10px 0}}
+nav{border-right:1px solid rgba(255,255,255,.07)}
+nav .theme{width:auto;display:inline-flex;gap:8px;align-items:center;margin-top:14px;padding:9px 14px;border:1px solid rgba(201,168,106,.5);border-radius:2px;color:#e8ebf2;font-size:.85rem;background:none}
+nav .theme:hover{background:rgba(201,168,106,.14);color:#fff}
+@media(max-width:860px){nav .theme{margin:0 0 0 8px;white-space:nowrap;padding:8px 12px}}
+pre{background:var(--soft);border:1px solid var(--line);border-radius:3px;padding:18px 20px;overflow-x:auto;font:13px/1.6 ui-monospace,Menlo,Consolas,monospace;margin:12px 0}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+.btn.tab{margin:0}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav aria-label="Lessons">
+<h1>Tail Loss with Extreme Value Theory</h1>
+<p>Risk Management — Module 4</p>
+<button data-t="0">1. Risk modeling with extreme value theory</button>
+<button data-t="1">2. Block maxima: Indonesian gold</button>
+<button data-t="2">3. The theorem and politics of extreme values</button>
+<button data-t="3">4. Extreme innovations in VaR modeling</button>
+<div class="mods"><a href="index.html">← All modules</a><button class="theme" id="theme" type="button" aria-label="Switch between light and dark mode"></button></div>
+</nav>
+<main>
+
+<section>
+<h2>Lesson 1: Risk modeling with extreme value theory</h2>
+<p class="lead">Most of a return distribution is irrelevant to tail risk. Extreme value theory (EVT) models only the far tail, using a family of distributions that the theory says the tail must belong to, so it can extrapolate to losses larger than anything yet observed.</p>
+<h3>Two approaches</h3>
+<table>
+<tr><th>Method</th><th>Data used</th><th>Distribution</th></tr>
+<tr><td>Block maxima</td><td>The largest loss in each block (month, year)</td><td>Generalized extreme value (GEV)</td></tr>
+<tr><td>Peaks over threshold</td><td>Every loss above a high threshold u</td><td>Generalized Pareto (GPD)</td></tr>
+</table>
+<p>Both share a tail index ξ. If ξ &gt; 0 the tail is heavy and decays like a power law, which is typical of financial losses. If ξ = 0 it decays exponentially, and if ξ &lt; 0 losses have a finite upper bound. For the Student-t distribution with ν degrees of freedom, ξ = 1/ν.</p>
+<p>With a fitted GPD, VaR<sub>p</sub> = u + (β/ξ)[((n/N<sub>u</sub>)(1 − p))<sup>−ξ</sup> − 1] and ES<sub>p</sub> = VaR<sub>p</sub>/(1 − ξ) + (β − ξu)/(1 − ξ), where n is the sample size and N<sub>u</sub> the number of exceedances.</p>
+<div class="lab">
+<h3>Peaks over threshold on heavy-tailed losses</h3>
+<p class="note">2,500 simulated daily losses (%) from a Student-t with unit variance. The GPD is fitted by probability-weighted moments. The chart is a log scale of the chance of exceeding each loss: dots are the data, the blue curve is the GPD, and the grey curve is the normal distribution.</p>
+<div class="row"><label for="df">Degrees of freedom ν (lower = heavier tail)</label><input id="df" type="range" min="3" max="10" value="4"><output id="dfO"></output></div>
+<div class="row"><label for="uq">Threshold (quantile %)</label><input id="uq" type="range" min="80" max="98" step="1" value="92"><output id="uqO"></output></div>
+<div class="row"><label for="cl">Confidence level (%)</label><input id="cl" type="range" min="97" max="99.9" step="0.1" value="99.5"><output id="clO"></output></div>
+<svg id="c1" viewBox="0 0 400 180" role="img" aria-label="Tail plot" style="width:100%;max-width:620px"></svg>
+<table><tr><th>Method</th><th>VaR (%)</th><th>ES (%)</th></tr><tr id="t1"></tr><tr id="t2"></tr><tr id="t3"></tr></table>
+<div class="stat"><div><small>True tail index 1/ν</small><b id="xt"></b></div><div><small>Estimated ξ</small><b id="xe"></b></div><div><small>Exceedances used</small><b id="nu"></b></div></div>
+<p class="note">The estimated ξ usually sits below the true 1/ν at lower thresholds, because the body of the distribution still influences the fit. Raising the threshold reduces that bias but leaves fewer exceedances, so the estimate gets noisier.</p>
+<p class="note" id="m1"></p>
+</div>
+<div class="quiz" data-l="0"></div>
+</section>
+
+<section>
+<h2>Lesson 2: Block maxima, Indonesian gold</h2>
+<p class="lead">Gold quoted in rupiah, such as Antam bars, carries two risks at once: the world gold price and the USD/IDR exchange rate. Block maxima turns a long daily history into a handful of worst-loss observations and fits a GEV distribution to them.</p>
+<h3>Procedure</h3>
+<ol>
+<li>Compute daily losses (negative returns) and split them into blocks.</li>
+<li>Keep the worst loss in each block.</li>
+<li>Fit a GEV with location μ, scale σ and shape ξ.</li>
+<li>Read off return levels: the loss expected to be exceeded once every T years, x<sub>T</sub> = μ + (σ/ξ)[(−ln(1 − 1/T))<sup>−ξ</sup> − 1] with T counted in blocks.</li>
+</ol>
+<p>The block size is a trade-off. Short blocks give many maxima, but they may not be extreme enough for the theory to apply. Long blocks fit the theory better, but leave few observations and noisy estimates.</p>
+<div class="lab">
+<h3>Return levels for rupiah gold</h3>
+<p class="note">The data are 20 years (5,040 trading days) of simulated daily rupiah gold returns with volatility clustering and fat tails, so you can see the method at work. To use real prices, replace the simulated series with your own daily data.</p>
+<div class="row"><label for="bs">Block length</label><input id="bs" type="range" min="0" max="4" value="1"><output id="bsO"></output></div>
+<div class="row"><label for="ty">Return period (years)</label><input id="ty" type="range" min="2" max="100" value="20"><output id="tyO"></output></div>
+<svg id="c2" viewBox="0 0 400 200" role="img" aria-label="Return level plot" style="width:100%;max-width:620px"></svg>
+<div class="stat"><div><small>Blocks</small><b id="nb"></b></div><div><small>Shape ξ</small><b id="gx"></b></div><div><small>Return level</small><b id="rl"></b></div><div><small>Worst observed loss</small><b id="wo"></b></div></div>
+<p class="note" id="rp"></p>
+<table><tr><th>Block</th><th>Maxima</th><th>Shape ξ</th><th>Level for chosen period</th></tr><tbody id="bt"></tbody></table>
+<p class="note" id="bm"></p>
+</div>
+<div class="quiz" data-l="1"></div>
+</section>
+
+<section>
+<h2>Lesson 3: The theorem and politics of extreme values</h2>
+<p class="lead">The Fisher–Tippett–Gnedenko theorem is to maxima what the central limit theorem is to averages: whatever the underlying distribution, properly normalized block maxima can only converge to one of three shapes.</p>
+<h3>The theorem</h3>
+<table>
+<tr><th>Limit</th><th>Shape ξ</th><th>Tail</th><th>Parents</th></tr>
+<tr><td>Fréchet</td><td>ξ &gt; 0</td><td>Heavy, power-law</td><td>Student-t, Pareto</td></tr>
+<tr><td>Gumbel</td><td>ξ = 0</td><td>Exponential</td><td>Normal, exponential, lognormal</td></tr>
+<tr><td>Weibull</td><td>ξ &lt; 0</td><td>Bounded</td><td>Uniform, beta</td></tr>
+</table>
+<p>The companion Pickands–Balkema–de Haan theorem says that losses above a high threshold follow a generalized Pareto distribution. Together, they justify both methods from Lesson 1.</p>
+<h3>The politics</h3>
+<p>Emil Julius Gumbel, whose name the Gumbel distribution carries, wrote the field’s classic text, <i>Statistics of Extremes</i> (1958). Earlier, in Weimar Germany, he documented political murders committed by the far right and was forced out of his post at Heidelberg in 1932. He left Germany in 1933, and the Nazi government stripped him of citizenship the next year. His story is a reminder that statistics of extremes concerns real events.</p>
+<p>Tail modeling is political in a quieter sense too. Choosing a tail model, a confidence level, or VaR versus ES decides how much capital banks hold and who bears the cost of rare events. Before the 2008 crisis, many risk models understated tails, and regulation later moved toward expected shortfall in the Basel market-risk framework. Different tail assumptions give very different answers, which is why they get contested.</p>
+<div class="lab">
+<h3>Shapes of the GEV</h3>
+<p class="note">Standard GEV with location 0 and scale 1.</p>
+<div class="row"><label for="xi">Shape ξ</label><input id="xi" type="range" min="-0.5" max="0.8" step="0.05" value="0.2"><output id="xiO"></output></div>
+<svg id="c3" viewBox="0 0 400 150" role="img" aria-label="GEV density" style="width:100%;max-width:560px"></svg>
+<div class="stat"><div><small>Type</small><b id="ty3" style="font-size:1.5rem"></b></div><div><small>1-in-100 block level</small><b id="r100"></b></div></div>
+<p class="note" id="mo"></p>
+</div>
+<div class="lab">
+<h3>The theorem in action</h3>
+<p class="note">Each histogram shows 2,000 simulated block maxima, normalized as the theorem prescribes. The curve is the limit law. Increase the block size and watch them converge.</p>
+<div class="row"><label for="pd">Parent distribution</label><select id="pd" style="padding:8px;background:var(--panel);color:var(--ink);border:1px solid var(--line)"><option value="0">Exponential (Gumbel limit)</option><option value="1">Pareto, α = 3 (Fréchet limit)</option><option value="2">Uniform (Weibull limit)</option></select><span></span></div>
+<div class="row"><label for="bn">Block size n</label><input id="bn" type="range" min="1" max="500" value="5"><output id="bnO"></output></div>
+<svg id="c3b" viewBox="0 0 400 150" role="img" aria-label="Histogram of maxima" style="width:100%;max-width:560px"></svg>
+<div class="stat"><div><small>Distance to limit (KS)</small><b id="ks"></b></div></div>
+</div>
+<div class="quiz" data-l="2"></div>
+</section>
+
+<section>
+<h2>Lesson 4: Extreme innovations in VaR modeling</h2>
+<p class="lead">Plain EVT assumes returns are independent, but real volatility clusters. The conditional EVT approach of McNeil and Frey filters out the volatility first, then fits the tail to what is left.</p>
+<h3>Conditional EVT in two steps</h3>
+<ol>
+<li>Estimate today’s volatility σ<sub>t</sub> with GARCH or EWMA, and form standardized residuals z = r/σ.</li>
+<li>Fit a GPD to the tail of the residuals and set VaR<sub>t</sub> = σ<sub>t</sub> × q<sub>p</sub>(z).</li>
+</ol>
+<p>Volatility moves immediately, and the EVT quantile handles the tail shape. Other innovations build on this: time-varying thresholds, the Hill estimator for ξ, multivariate EVT for joint extremes, and hybrids with machine learning. In every case, the confidence level, threshold and window matter, so test them out of sample.</p>
+<div class="lab">
+<h3>Backtest: normal, unconditional EVT and conditional EVT</h3>
+<p class="note">1,500 simulated days with t-distributed shocks, volatility clustering, and a crisis around day 1,200. Models use a 500-day window and are evaluated on the last 1,000 days. Kupiec’s test rejects when χ² exceeds 3.84.</p>
+<div class="row"><label for="p4">Confidence level (%)</label><input id="p4" type="range" min="95" max="99.5" step="0.5" value="99"><output id="p4O"></output></div>
+<div class="row"><label for="q4">EVT threshold (quantile %)</label><input id="q4" type="range" min="85" max="97" value="90"><output id="q4O"></output></div>
+<div class="row"><label for="l4">EWMA decay λ</label><input id="l4" type="range" min="0.9" max="0.99" step="0.01" value="0.94"><output id="l4O"></output></div>
+<svg id="c4" viewBox="0 0 400 170" role="img" aria-label="Returns and VaR" style="width:100%;max-width:620px"></svg>
+<table><tr><th>Method</th><th>Exceedances</th><th>Expected</th><th>Kupiec test</th><th>Average VaR</th></tr><tr id="u1"></tr><tr id="u2"></tr><tr id="u3"></tr></table>
+<p class="note">The chart shows the last 250 days. Blue: conditional EVT VaR. Brass: normal EWMA VaR. Red marks are days when the return fell below the conditional EVT VaR.</p>
+</div>
+<div class="quiz" data-l="3"></div>
+</section>
+
+</main>
+</div>
+
+<script>
+const $=id=>document.getElementById(id),clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const secs=[...document.querySelectorAll('main section')],btns=[...document.querySelectorAll('nav button[data-t]')];
+function show(i){secs.forEach((s,j)=>s.classList.toggle('on',i===j));btns.forEach((b,j)=>b.setAttribute('aria-current',i===j));try{localStorage.setItem('m4_tab',i)}catch(e){}scrollTo(0,0)}
+btns.forEach((b,i)=>b.onclick=()=>show(i));
+let st=0;try{st=+localStorage.getItem('m4_tab')||0}catch(e){}
+if(/^#l[1-4]$/.test(location.hash))st=+location.hash[2]-1;show(st);
+let seed=9;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+const gauss=()=>Math.sqrt(-2*Math.log(rnd()))*Math.cos(2*Math.PI*rnd());
+const zq=p=>{const t=Math.sqrt(-2*Math.log(p));return-(t-(2.515517+.802853*t+.010328*t*t)/(1+1.432788*t+.189269*t*t+.001308*t**3))};
+const erf=x=>{const s=Math.sign(x);x=Math.abs(x);const t=1/(1+.3275911*x);return s*(1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-.284496736)*t+.254829592)*t*Math.exp(-x*x))};
+const Nn=x=>.5*(1+erf(x/Math.SQRT2)),phi=z=>Math.exp(-z*z/2)/Math.sqrt(2*Math.PI),sum=a=>a.reduce((x,y)=>x+y,0);
+const path=(pts,c,w,o,d)=>`<polyline points="${pts.map(p=>p.map(v=>v.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="${c}" stroke-width="${w||2}" opacity="${o||1}"${d?' stroke-dasharray="5 4"':''}/>`;
+function gamma(z){const c=[0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+ if(z<.5)return Math.PI/(Math.sin(Math.PI*z)*gamma(1-z));z-=1;let x=c[0];for(let i=1;i<9;i++)x+=c[i]/(z+i);const t=z+7.5;return Math.sqrt(2*Math.PI)*Math.pow(t,z+.5)*Math.exp(-t)*x}
+/* GPD */
+function gpd(ex){const n=ex.length,y=[...ex].sort((a,b)=>a-b),a0=sum(y)/n;let a1=0;for(let i=0;i<n;i++)a1+=y[i]*(n-i-.5)/n;a1/=n;
+ const d=a0-2*a1;let xi=2-a0/d,be=2*a0*a1/d;if(!(be>0)||!isFinite(xi)||!isFinite(be)){xi=0;be=a0}return{xi:clamp(xi,-.4,.9),be}}
+const gq=(u,xi,be,n,Nu,p)=>{const r=n/Nu*(1-p);return Math.abs(xi)<1e-6?u-be*Math.log(r):u+be/xi*(Math.pow(r,-xi)-1)};
+const ges=(v,u,xi,be)=>v/(1-xi)+(be-xi*u)/(1-xi);
+function evt(L,q,p){const n=L.length,s=[...L].sort((a,b)=>a-b),u=s[Math.min(n-2,Math.floor(q*n))],ex=s.filter(v=>v>u).map(v=>v-u),Nu=ex.length;if(Nu<8)return null;const f=gpd(ex);return{n,s,u,Nu,xi:f.xi,be:f.be,v:gq(u,f.xi,f.be,n,Nu,p)}}
+function garchT(n,sh,w,a,b){let s2=w/(1-a-b),r=[],s=[];for(let t=0;t<n;t++){let z;if(sh&&sh[t]!==undefined)z=sh[t];else{let c=0;for(let k=0;k<4;k++)c+=gauss()**2;z=gauss()/Math.sqrt(c/4)/Math.SQRT2}const sg=Math.sqrt(s2);s.push(sg);r.push(sg*z);s2=w+a*r[t]*r[t]+b*s2}return{r,s}}
+const xl=(p,x)=>x>0?x*Math.log(p):0;
+const kup=(x,N,p)=>{const ph=x/N,ll=q=>(N-x)*Math.log(1-q)+xl(q,x);return-2*(ll(p)-ll(ph))};
+
+/* L1 */
+const n1=2500,Z1=[...Array(n1)].map(gauss),Gm=[...Array(n1)].map(()=>[...Array(10)].map(gauss));
+function l1(){const df=+$('df').value,q=+$('uq').value/100,p=+$('cl').value/100;$('dfO').textContent=df;$('uqO').textContent=Math.round(q*100);$('clO').textContent=(p*100).toFixed(1);
+ const L=Z1.map((z,i)=>{let c=0;for(let k=0;k<df;k++)c+=Gm[i][k]**2;return z/Math.sqrt(c/df)/Math.sqrt(df/(df-2))});
+ const mu=sum(L)/n1,sd=Math.sqrt(sum(L.map(v=>(v-mu)**2))/n1),zp=-zq(1-p),nv=mu+sd*zp,ne=mu+sd*phi(zp)/(1-p);
+ const e=evt(L,q,p),s=e?e.s:[...L].sort((a,b)=>a-b),ev=s[Math.min(n1-1,Math.floor(p*n1))],k=Math.max(1,Math.round((1-p)*n1)),ee=sum(s.slice(n1-k))/k;
+ const row=(n,v,x)=>`<td>${n}</td><td>${v.toFixed(2)}</td><td>${x===null?'n/a':x.toFixed(2)}</td>`;
+ $('t1').innerHTML=row('Normal',nv,ne);$('t2').innerHTML=row('Empirical (sample quantile)',ev,ee);
+ if(!e){$('t3').innerHTML='<td>EVT</td><td colspan="2">Too few exceedances. Lower the threshold.</td>';return}
+ $('t3').innerHTML=row('EVT (GPD)',e.v,ges(e.v,e.u,e.xi,e.be));
+ $('xt').textContent=(1/df).toFixed(2);$('xe').textContent=e.xi.toFixed(2);$('nu').textContent=e.Nu;
+ const K=150,x0=s[n1-K],x1=s[n1-1]*1.1,X=v=>40+(v-x0)/(x1-x0)*350,Yl=l=>clamp(10+(-1-l)/3.4*150,0,165);let h='';
+ for(let r=1;r<=K;r++)h+=`<circle cx="${X(s[n1-r])}" cy="${Yl(Math.log10(r/n1))}" r="2.2" fill="var(--ink)" opacity=".7"/>`;
+ const G=[],Nm=[];for(let i=0;i<=60;i++){const x=x0+(x1-x0)*i/60;Nm.push([X(x),Yl(Math.log10(Math.max(1e-12,1-Nn((x-mu)/sd))))]);if(x>=e.u)G.push([X(x),Yl(Math.log10(e.Nu/n1*Math.pow(Math.max(1e-9,1+e.xi*(x-e.u)/e.be),-1/(e.xi||1e-9))))])}
+ h+=path(Nm,'var(--muted)',2)+path(G,'var(--accent)',2.5)+`<line x1="40" x2="390" y1="${Yl(Math.log10(1-p))}" y2="${Yl(Math.log10(1-p))}" stroke="var(--brass)" stroke-dasharray="4 3"/><line x1="${X(e.v)}" x2="${X(e.v)}" y1="10" y2="165" stroke="var(--brass)" stroke-dasharray="4 3"/><text x="${X(e.v)+4}" y="22">EVT VaR</text><text x="40" y="178">Loss (%) →</text>`;
+ $('c1').innerHTML=h;
+ $('m1').textContent=e.v>nv*1.15?`The normal model puts the ${(p*100).toFixed(1)}% VaR at ${nv.toFixed(2)}%, while the heavy-tailed fit says ${e.v.toFixed(2)}%. Ignoring tail thickness would understate the loss.`:'At this confidence level and tail weight, the normal and EVT estimates are close. Try a lower ν or a higher confidence level.'}
+['df','uq','cl'].forEach(i=>$(i).oninput=l1);l1();
+
+/* L2 */
+const GOLD=garchT(5040,{},.02,.08,.9),GL=GOLD.r.map(v=>-v);
+function gev(m){const n=m.length,y=[...m].sort((a,b)=>a-b);let b0=sum(y)/n,b1=0,b2=0;for(let i=0;i<n;i++){const p=(i+1-.35)/n;b1+=y[i]*p;b2+=y[i]*p*p}b1/=n;b2/=n;
+ const c=(2*b1-b0)/(3*b2-b0)-Math.LN2/Math.log(3),k=7.859*c+2.9554*c*c;let xi=-k,s,mu;
+ if(Math.abs(k)<1e-4){s=(2*b1-b0)/Math.LN2;mu=b0-.5772157*s;xi=0}else{s=k*(2*b1-b0)/(gamma(1+k)*(1-Math.pow(2,-k)));mu=b0+s*(gamma(1+k)-1)/k}
+ return{xi,s,mu}}
+const rlev=(f,T)=>{const y=-Math.log(1-1/T);return Math.abs(f.xi)<1e-4?f.mu-f.s*Math.log(y):f.mu+f.s/f.xi*(Math.pow(y,-f.xi)-1)};
+const maxima=bs=>{const m=[];for(let i=0;i+bs<=GL.length;i+=bs)m.push(Math.max(...GL.slice(i,i+bs)));return m};
+const SZ=[5,21,63,126,252],NM=['Weekly','Monthly','Quarterly','Half-yearly','Yearly'];
+function l2(){const bi=+$('bs').value,bs=SZ[bi],Ty=+$('ty').value;$('bsO').textContent=NM[bi];$('tyO').textContent=Ty;
+ const m=maxima(bs),f=gev(m),bpy=252/bs,lvl=y=>rlev(f,Math.max(1.05,y*bpy)),obs=Math.max(...GL);
+ const rl=lvl(Ty),ymax=Math.min(Math.max(obs,rl)*1.1,obs*3),X=y=>40+(Math.log10(y)+.3)/2.3*350,Y=v=>180-clamp(v/ymax,0,1)*170;let h='';
+ const s=[...m].sort((a,b)=>a-b);s.forEach((v,i)=>{const yrs=(m.length+1)/(m.length-i)/bpy;if(yrs>=.5&&yrs<=100)h+=`<circle cx="${X(yrs)}" cy="${Y(v)}" r="2.5" fill="var(--ink)" opacity=".7"/>`});
+ const C=[];for(let i=0;i<=60;i++){const yrs=Math.max(.5,1.05/bpy)*Math.pow(100/Math.max(.5,1.05/bpy),i/60);C.push([X(yrs),Y(lvl(yrs))])}
+ h+=path(C,'var(--accent)',2.5)+`<line x1="${X(Ty)}" x2="${X(Ty)}" y1="10" y2="180" stroke="var(--brass)" stroke-dasharray="4 3"/><circle cx="${X(Ty)}" cy="${Y(rl)}" r="5" fill="var(--alert)"/><text x="40" y="196">0.5 yrs</text><text x="390" y="196" text-anchor="end">100 yrs (log scale)</text>`;
+ $('c2').innerHTML=h;$('nb').textContent=m.length;$('gx').textContent=f.xi.toFixed(2);$('rl').textContent=rl.toFixed(1)+'%';$('wo').textContent=obs.toFixed(1)+'%';
+ $('rp').textContent=`On a Rp 1 billion gold position, a one-day loss of about Rp ${(rl*10).toFixed(0)} million is expected to be exceeded once every ${Ty} years.`;
+ $('bt').innerHTML=SZ.map((b,i)=>{const mm=maxima(b),g=gev(mm);return`<tr style="${i===bi?'font-weight:600;color:var(--accent)':''}"><td>${NM[i]} (${b} days)</td><td>${mm.length}</td><td>${g.xi.toFixed(2)}</td><td>${rlev(g,Math.max(1.05,Ty*252/b)).toFixed(1)}%</td></tr>`}).join('');
+ $('bm').textContent=m.length<50?`Only ${m.length} blocks: the fit is noisy, so compare the estimates in the table before trusting this one.`:bs<=21?`${m.length} blocks give a stable fit, but short blocks may include maxima that are not truly extreme.`:'A balance between block count and extremeness.'}
+['bs','ty'].forEach(i=>$(i).oninput=l2);l2();
+
+/* L3 */
+function l3(){const xi=+$('xi').value;$('xiO').textContent=xi.toFixed(2);
+ const pdf=x=>{if(Math.abs(xi)<1e-6)return Math.exp(-x)*Math.exp(-Math.exp(-x));const u=1+xi*x;if(u<=0)return 0;const t=Math.pow(u,-1/xi);return Math.pow(t,xi+1)*Math.exp(-t)},xs=[],P=[];
+ const X=x=>10+(x+3)/11*380,pts=[];for(let i=0;i<=220;i++){const x=-3+i*.05;pts.push([x,pdf(x)])}const my=Math.max(.45,...pts.map(p=>p[1]));
+ $('c3').innerHTML=`<line x1="10" x2="390" y1="130" y2="130" stroke="var(--line)"/>`+path(pts.map(([x,v])=>[X(x),130-v/my*115]),'var(--accent)',2.5)+`<text x="10" y="146">−3</text><text x="390" y="146" text-anchor="end">8</text>`;
+ $('ty3').textContent=Math.abs(xi)<.03?'Gumbel':xi>0?'Fréchet':'Weibull';
+ const y=-Math.log(.99),r=Math.abs(xi)<1e-6?-Math.log(y):(Math.pow(y,-xi)-1)/xi;$('r100').textContent=r.toFixed(2);
+ $('mo').textContent=xi>=1?'The mean is infinite.':xi>=.5?'The mean exists but the variance is infinite, which is common in heavy-tailed markets.':xi>0?'Heavy tail: the mean and variance exist, but large values are far more likely than in the Gumbel case.':xi<-.02?`The distribution has a finite upper bound at x = ${(-1/xi).toFixed(2)}.`:'Light exponential tail with no upper bound.'}
+$('xi').oninput=l3;l3();
+const U3=[...Array(2000)].map(()=>Math.min(.999999,rnd()));
+const PD=[{a:-3,b:7,nm:(m,n)=>m-Math.log(n),mk:(u,n)=>-Math.log(1-Math.pow(u,1/n)),cdf:x=>Math.exp(-Math.exp(-x)),pdf:x=>Math.exp(-x)*Math.exp(-Math.exp(-x))},
+ {a:0,b:5,nm:(m,n)=>m/Math.pow(n,1/3),mk:(u,n)=>Math.pow(1-Math.pow(u,1/n),-1/3),cdf:x=>x>0?Math.exp(-Math.pow(x,-3)):0,pdf:x=>x>0?3*Math.pow(x,-4)*Math.exp(-Math.pow(x,-3)):0},
+ {a:-6,b:1,nm:(m,n)=>n*(m-1),mk:(u,n)=>Math.pow(u,1/n),cdf:x=>x<0?Math.exp(x):1,pdf:x=>x<0?Math.exp(x):0}];
+function l3b(){const d=PD[+$('pd').value],n=+$('bn').value;$('bnO').textContent=n;
+ const v=U3.map(u=>d.nm(d.mk(u,n),n)).sort((a,b)=>a-b),B=32,H=Array(B).fill(0),w=(d.b-d.a)/B;
+ v.forEach(x=>{if(x>=d.a&&x<d.b)H[Math.floor((x-d.a)/w)]++});
+ const D=H.map(c=>c/2000/w),mx=Math.max(...D,...Array.from({length:60},(_,i)=>d.pdf(d.a+(d.b-d.a)*i/59)))*1.05,X=x=>10+(x-d.a)/(d.b-d.a)*380,Y=y=>130-y/mx*115;
+ let h=D.map((c,i)=>`<rect x="${X(d.a+i*w)}" y="${Y(c)}" width="${380/B-1}" height="${130-Y(c)}" fill="var(--muted)" opacity=".6"/>`).join('');
+ h+=path(Array.from({length:120},(_,i)=>{const x=d.a+(d.b-d.a)*i/119;return[X(x),Y(d.pdf(x))]}),'var(--alert)',2.5);
+ $('c3b').innerHTML=h;let ks=0;v.forEach((x,i)=>{const F=d.cdf(x);ks=Math.max(ks,Math.abs((i+1)/2000-F),Math.abs(i/2000-F))});$('ks').textContent=ks.toFixed(3)}
+['pd','bn'].forEach(i=>$(i).oninput=l3b);l3b();
+
+/* L4 */
+const R4=garchT(1500,{1200:-6,1215:-5,1230:-4},.02,.08,.9).r;
+function l4(){const p=+$('p4').value/100,q=+$('q4').value/100,lam=+$('l4').value,W=500;$('p4O').textContent=(p*100).toFixed(1);$('q4O').textContent=Math.round(q*100);$('l4O').textContent=lam.toFixed(2);
+ let e=1.5;const E=[];for(let t=0;t<1500;t++){E.push(e);e=lam*e+(1-lam)*R4[t]**2}
+ const zp=-zq(1-p),V=[[],[],[]];let uc=null,cz=null;
+ for(let t=W;t<1500;t++){if((t-W)%5===0){uc=evt(R4.slice(t-W,t).map(v=>-v),q,p);cz=evt(R4.slice(t-W,t).map((v,i)=>-v/Math.sqrt(E[t-W+i])),q,p)}
+  V[0].push(-zp*Math.sqrt(E[t]));V[1].push(uc?-uc.v:-zp*Math.sqrt(E[t]));V[2].push(cz?-cz.v*Math.sqrt(E[t]):-zp*Math.sqrt(E[t]))}
+ const N=1500-W,pr=1-p,cnt=V.map(v=>v.filter((x,i)=>R4[W+i]<x).length),avg=V.map(v=>-sum(v)/N);
+ const X=k=>10+k*1.52,Y=v=>clamp(85-v/8*75,4,166);let h=`<line x1="10" x2="390" y1="85" y2="85" stroke="var(--line)"/>`;
+ for(let k=0;k<250;k++){const i=N-250+k,hit=R4[W+i]<V[2][i];h+=`<line x1="${X(k)}" x2="${X(k)}" y1="85" y2="${Y(R4[W+i])}" stroke="${hit?'var(--alert)':'var(--muted)'}" stroke-width="${hit?2.2:1}" opacity="${hit?1:.6}"/>`}
+ h+=path(V[0].slice(N-250).map((v,k)=>[X(k),Y(v)]),'var(--brass)',1.5)+path(V[2].slice(N-250).map((v,k)=>[X(k),Y(v)]),'var(--accent)',2);
+ $('c4').innerHTML=h;
+ ['Normal (EWMA)','Unconditional EVT','Conditional EVT'].forEach((n,i)=>{const L=kup(cnt[i],N,pr),ok=L<3.84;$('u'+(i+1)).innerHTML=`<td>${n}</td><td>${cnt[i]}</td><td>${(N*pr).toFixed(1)}</td><td style="font-weight:600;color:var(${ok?'--ok':'--alert'})">${ok?'Pass':'Reject'} (χ² ${L.toFixed(1)})</td><td>${avg[i].toFixed(2)}%</td>`})}
+['p4','q4','l4'].forEach(i=>$(i).oninput=l4);l4();
+
+/* quizzes */
+const Q=[
+[{q:'What does the tail index ξ > 0 indicate?',o:['A bounded distribution','A heavy, power-law tail','A normal tail','No extreme losses'],a:1,e:'Positive ξ means the tail decays like a power law, so extreme losses are far more likely than under a normal model.'},
+ {q:'In peaks over threshold, what is modeled with the GPD?',o:['Block maxima','Exceedances above a high threshold','All returns','Volatility'],a:1,e:'Losses above u, measured as excesses u, follow a generalized Pareto distribution.'},
+ {q:'If the threshold is set too high, the main problem is…',o:['Bias from the body of the distribution','Too few exceedances, so the fit has high variance','The normal VaR rises','ξ becomes negative'],a:1,e:'Few exceedances give noisy estimates, while a low threshold brings bias.'}],
+[{q:'What does a 20-year return level mean?',o:['The average loss','A loss expected to be exceeded about once every 20 years','The worst possible loss','A 20% loss'],a:1,e:'It is the quantile with a 1-in-T-years exceedance probability.'},
+ {q:'Why is the block size a trade-off?',o:['Longer blocks are always better','Short blocks may not be extreme enough, while long blocks leave few maxima','It sets the currency','It sets ξ'],a:1,e:'Bias versus variance: the same trade-off as the threshold in peaks over threshold.'},
+ {q:'Why can gold priced in rupiah carry extra tail risk?',o:['Gold has no risk','It mixes the world gold price with the USD/IDR exchange rate','Rupiah is fixed','Block maxima fail'],a:1,e:'A local-currency price combines two risk factors that can move together.'}],
+[{q:'The Fisher–Tippett–Gnedenko theorem says normalized block maxima converge to…',o:['A normal distribution','One of three extreme value types','A uniform distribution','A Poisson distribution'],a:1,e:'The limit is Fréchet, Gumbel or Weibull, all unified in the GEV family.'},
+ {q:'Which parent distribution gives a Fréchet limit?',o:['Normal','Uniform','Student-t or Pareto','Exponential'],a:2,e:'Power-law tails fall in the Fréchet domain of attraction.'},
+ {q:'Emil Gumbel is remembered for…',o:['Inventing VaR','His work on the statistics of extremes','Basel regulation','Neural networks'],a:1,e:'His 1958 book Statistics of Extremes shaped the field.'}],
+[{q:'Why filter returns with GARCH or EWMA before applying EVT?',o:['To remove all risk','Volatility clusters, and EVT assumes roughly independent observations','To reduce the sample','To make returns normal'],a:1,e:'Standardized residuals are closer to independent, so a GPD fits them better.'},
+ {q:'In conditional EVT, VaR_t equals…',o:['The GPD quantile alone','σ_t multiplied by the residual quantile','The average loss','A fixed constant'],a:1,e:'The volatility forecast scales the tail quantile of the standardized residuals.'},
+ {q:'A 99% VaR with 3% exceedances indicates…',o:['A good model','Risk is underestimated','Risk is overestimated','Nothing'],a:1,e:'Breaches occur three times as often as expected.'}]];
+document.querySelectorAll('.quiz').forEach(el=>{const l=+el.dataset.l;let h='<h3>Check your understanding</h3>';
+ Q[l].forEach((x,i)=>{h+=`<div class="q" data-i="${i}"><p>${x.q}</p>${x.o.map((o,j)=>`<label><input type="radio" name="q${l}_${i}" value="${j}"> ${o}</label>`).join('')}<div class="fb"></div></div>`});
+ el.innerHTML=h;
+ el.querySelectorAll('.q').forEach(qe=>qe.onchange=e=>{const x=Q[l][+qe.dataset.i],ok=+e.target.value===x.a,fb=qe.querySelector('.fb');
+  fb.className='fb '+(ok?'good':'bad');fb.textContent=(ok?'Correct. ':'Not quite. ')+x.e;qe.dataset.ok=ok?1:0;
+  if(el.querySelectorAll('.q[data-ok="1"]').length===Q[l].length)btns[l].classList.add('done')})});
+</script>
+<script>
+(function(){const r=document.documentElement,b=document.getElementById('theme');
+function set(t){r.dataset.theme=t;try{localStorage.setItem('sr_theme',t)}catch(e){}b.textContent=t==='dark'?'☀ Switch to light':'☾ Switch to dark';b.setAttribute('aria-pressed',t==='dark')}
+set(r.dataset.theme||'dark');b.onclick=()=>set(r.dataset.theme==='dark'?'light':'dark')})();
+</script>
+</body>
+</html>
+
+</html>
